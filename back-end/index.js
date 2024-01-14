@@ -3,9 +3,10 @@ const path = require('path');
 const process = require('process');
 const {authenticate} = require('@google-cloud/local-auth');
 const {google} = require('googleapis');
+const { calendar } = require('googleapis/build/src/apis/calendar');
 
 // If modifying these scopes, delete token.json.
-const SCOPES = ['https://www.googleapis.com/auth/calendar.readonly'];
+const SCOPES = ['https://www.googleapis.com/auth/calendar'];
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
 // time.
@@ -18,14 +19,14 @@ const CREDENTIALS_PATH = path.join(process.cwd(), 'z');
  * @return {Promise<OAuth2Client|null>}
  */
 async function loadSavedCredentialsIfExist() {
-        try {
-            const content = await fs.readFile(TOKEN_PATH);
-            const credentials = JSON.parse(content);
-            return google.auth.fromJSON(credentials);
-        } catch (err) {
-            return null;
-        }
-        }
+    try {
+        const content = await fs.readFile(TOKEN_PATH);
+        const credentials = JSON.parse(content);
+        return google.auth.fromJSON(credentials);
+    } catch (err) {
+        return null;
+    }
+}
 
 /**
  * Serializes credentials to a file compatible with GoogleAUth.fromJSON.
@@ -90,4 +91,39 @@ async function listEvents(auth) {
     });
 }
 
+var event = {
+    'summary': 'Google I/O 2015',
+    'location': '800 Howard St., San Francisco, CA 94103',
+    'description': 'A chance to hear more about Google\'s developer products.',
+    'start': {
+      'dateTime': '2015-05-28T09:00:00-07:00',
+      'timeZone': 'America/Los_Angeles',
+    },
+    'end': {
+      'dateTime': '2015-05-28T17:00:00-07:00',
+      'timeZone': 'America/Los_Angeles',
+    },
+    'reminders': {
+      'useDefault': false,
+      'overrides': [
+        {'method': 'email', 'minutes': 24 * 60},
+        {'method': 'popup', 'minutes': 10},
+      ],
+    },
+  };
+
+  const client = authorize(); 
+  const cal = google.calendar({version: 'v3', auth: client})
+  
+  cal.events.insert({
+    auth: authorize(),
+    calendarId: 'primary',
+    resource: event,
+  }, function(err, event) {
+    if (err) {
+      console.log('There was an error contacting the Calendar service: ' + err);
+      return;
+    }
+    console.log('Event created: %s', event.htmlLink);
+  });
 authorize().then(listEvents).catch(console.error);
